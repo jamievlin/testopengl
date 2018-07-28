@@ -3,9 +3,11 @@ LIBS=-lglfw -lGL -lGLU -lGLEW
 # FLAGS=-DGLEW_STATIC
 CXXFLAGS= -std=c++14 -Wall -g
 
+OFILES=window.o shadersproc.o
+
 default: testopengl
 
-testopengl: main.cc window.o
+testopengl: main.cc $(OFILES)
 	$(CXX) $(CXXFLAGS) $(FLAGS) $(LIBS) -o $@ $^
 
 %.o: %.cc %.h
