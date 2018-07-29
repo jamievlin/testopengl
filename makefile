@@ -3,7 +3,7 @@ LIBS=-lglfw -lGL -lGLU -lGLEW
 # FLAGS=-DGLEW_STATIC
 CXXFLAGS= -std=c++14 -Wall -g
 
-OFILES=window.o shadersproc.o
+OFILES=window.o shadersproc.o color.o
 
 default: testopengl
 

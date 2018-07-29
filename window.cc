@@ -2,7 +2,10 @@
 
 #include <GL/gl.h>
 #include <GL/glu.h>
+
 #include <GLFW/glfw3.h>
+
+#include <glm/glm.hpp>
 
 #include <vector>
 #include <string>
@@ -11,10 +14,14 @@
 #include <array>
 #include <cassert>
 
-#include <iostream>
+// #include <iostream>
+#include <chrono>
+#include <cmath>
+#include <ratio>
 
 #include "window.h"
 #include "shadersproc.h"
+#include "color.h"
 
 Window::Window() : win1(glfwCreateWindow(800, 600, "Hello OpenGL", nullptr, nullptr))
 {
@@ -26,8 +33,8 @@ Window::Window() : win1(glfwCreateWindow(800, 600, "Hello OpenGL", nullptr, null
     glGenVertexArrays(1, &vao);
     glBindVertexArray(vao);
 
-    GLuint vertShader = createShaderFile("vs.glsl", GL_VERTEX_SHADER);
-    GLuint fragShader = createShaderFile("fs.glsl", GL_FRAGMENT_SHADER);
+    GLuint vertShader = createShaderFile("shaders/vs.glsl", GL_VERTEX_SHADER);
+    GLuint fragShader = createShaderFile("shaders/fs.glsl", GL_FRAGMENT_SHADER);
 
     shaderProg = glCreateProgram();
     glAttachShader(shaderProg, vertShader);
@@ -46,17 +53,26 @@ bool Window::isActive()
 
 void Window::mainLoop()
 {
+    auto lastTime = std::chrono::high_resolution_clock::now();
     while (isActive())
     {
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         glfwPollEvents();
-        eventTick();
-        glfwSwapBuffers(win1);
+
+        auto newTime = std::chrono::high_resolution_clock::now();
+        std::chrono::duration<float, std::milli> duration = newTime - lastTime;
+        eventTick(duration.count());
+        lastTime = newTime;
+        glfwSwapBuffers(win1);        
     }
 }
 
-void Window::eventTick()
+
+void Window::eventTick(float deltaTime)
 {
+    totalTime += deltaTime;
+    // std::cout << totalTime << std::endl;
+
     std::vector<float> vertices = {
         0.0f, 0.5f,
         0.5f, -0.5f,
@@ -71,6 +87,11 @@ void Window::eventTick()
 
     glLinkProgram(shaderProg);
     glUseProgram(shaderProg);
+
+    GLint uniColor = glGetUniformLocation(shaderProg, "triangleCol");
+
+    auto rgb = color::hsv2rgb(glm::vec3(totalTime/1000, 1, 1), false);
+    glUniform3f(uniColor, rgb.r, rgb.g, rgb.b);
 
     GLint posAttrib = glGetAttribLocation(shaderProg, "position");
     glVertexAttribPointer(posAttrib, 2, GL_FLOAT, GL_FALSE, 0, 0);
