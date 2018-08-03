@@ -1,9 +1,12 @@
 #version 150
 
 uniform vec3 triangleCol;
+
+in float Intensity;
 out vec4 outColor;
 
 void main()
 {
-    outColor = vec4(triangleCol, 1.0);
+    vec3 rawCol = vec3(1, 1, 1) - Intensity * triangleCol;
+    outColor = vec4(rawCol, 1);
 }
