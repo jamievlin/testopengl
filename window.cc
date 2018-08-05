@@ -73,13 +73,12 @@ void Window::eventTick(float deltaTime)
     totalTime += deltaTime;
     // std::cout << totalTime << std::endl;
 
-    // [x, y] [v]
+    // [x, y] [v] [u, v]
     std::vector<float> vertices = {
-        -0.5f, 0.5f, 1.f,    // vert 1
-        0.5f, 0.5f, 0.5f,  // vert 2
-        0.5f, -0.5f, 0.1f, // vert 3
-
-        -0.5f, -0.5f, 0.5f,  // vert 4
+        -0.5f, 0.5f, 1.f, 0.f, 0.f,   // vert 1
+        0.5f, 0.5f, 0.5f, 1.f, 0.f,   // vert 2
+        0.5f, -0.5f, 0.1f, 1.f, 1.f,  // vert 3
+        -0.5f, -0.5f, 0.5f, 0.f, 1.f  // vert 4
 
     };
 
@@ -99,6 +98,24 @@ void Window::eventTick(float deltaTime)
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(GLuint) * elements.size(), elements.data(), GL_STATIC_DRAW);
 
+    GLuint tex;
+    glGenTextures(1, &tex);
+    glBindTexture(GL_TEXTURE_2D, tex);
+
+    float borderCol[] = {1.f, 0.f, 0.f, 1.f};
+    glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderCol);
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glGenerateMipmap(GL_TEXTURE_2D);
+
+    float pixels[] = {
+        0.f, 0.f, 0.f, 1.f, 1.f, 1.f, 
+        1.f, 1.f, 1.f, 0.f, 0.f, 0.f
+    };
+
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 2, 2, 0, GL_RGB, GL_FLOAT, pixels);
+
 
     glLinkProgram(shaderProg);
     glUseProgram(shaderProg);
@@ -109,14 +126,18 @@ void Window::eventTick(float deltaTime)
     glUniform3f(uniColor, rgb.r, rgb.g, rgb.b);
 
     GLint posAttrib = glGetAttribLocation(shaderProg, "position");
-    glVertexAttribPointer(posAttrib, 2, GL_FLOAT, GL_FALSE, 3 * sizeof(float), 0);
+    glVertexAttribPointer(posAttrib, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), 0);
     glEnableVertexAttribArray(posAttrib);
 
     GLint intAttrib = glGetAttribLocation(shaderProg, "intensity");
-    glVertexAttribPointer(intAttrib, 1, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void *)(2 * sizeof(float)));
+    glVertexAttribPointer(intAttrib, 1, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void *)(2 * sizeof(float)));
     glEnableVertexAttribArray(intAttrib);
 
+    GLint texAttrib = glGetAttribLocation(shaderProg, "texcoord");
+    glEnableVertexAttribArray(texAttrib);
+    glVertexAttribPointer(texAttrib, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3*sizeof(float)));
+
     //glDrawArrays(GL_TRIANGLES, 0, 6);
-    glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, 0);;
+    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);;
 
 }

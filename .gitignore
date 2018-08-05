@@ -38,3 +38,5 @@
 !.vscode/extensions.json
 
 testopengl
+
+res/*
