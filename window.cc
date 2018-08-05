@@ -18,12 +18,14 @@
 #include <chrono>
 #include <cmath>
 #include <ratio>
+#include <memory>
 
 #include "window.h"
+#include "glpng.h" 
 #include "shadersproc.h"
 #include "color.h"
 
-Window::Window() : win1(glfwCreateWindow(800, 600, "Hello OpenGL", nullptr, nullptr))
+Window::Window() : win1(glfwCreateWindow(800, 800, "Hello OpenGL", nullptr, nullptr))
 {
     glfwMakeContextCurrent(win1);
 
@@ -39,6 +41,8 @@ Window::Window() : win1(glfwCreateWindow(800, 600, "Hello OpenGL", nullptr, null
     shaderProg = glCreateProgram();
     glAttachShader(shaderProg, vertShader);
     glAttachShader(shaderProg, fragShader);
+
+    this->im = std::make_unique<glpng::PNGArray>("res/texture.png");
 }
 
 Window::~Window()
@@ -109,12 +113,7 @@ void Window::eventTick(float deltaTime)
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glGenerateMipmap(GL_TEXTURE_2D);
 
-    float pixels[] = {
-        0.f, 0.f, 0.f, 1.f, 1.f, 1.f, 
-        1.f, 1.f, 1.f, 0.f, 0.f, 0.f
-    };
-
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 2, 2, 0, GL_RGB, GL_FLOAT, pixels);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, im->width, im->height, 0, GL_RGB, GL_FLOAT, im->data.data());
 
 
     glLinkProgram(shaderProg);

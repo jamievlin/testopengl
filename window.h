@@ -1,5 +1,11 @@
+#ifndef __TOGL_WINDOW
+#define __TOGL_WINDOW
+
 #include <GLFW/glfw3.h>
 #include <string>
+#include <memory>
+
+#include "glpng.h"
 
 class Window
 {
@@ -22,6 +28,9 @@ private:
     GLuint shaderProg;
     GLuint vao;
 
+    std::unique_ptr<glpng::PNGArray> im;
+
     float totalTime;
 };
 
+#endif

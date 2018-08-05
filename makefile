@@ -1,9 +1,9 @@
 CXX=clang++
-LIBS=-lglfw -lGL -lGLU -lGLEW
+LIBS=-lglfw -lGL -lGLU -lGLEW -lpng
 # FLAGS=-DGLEW_STATIC
 CXXFLAGS= -std=c++14 -Wall -g
 
-OFILES=window.o shadersproc.o color.o
+OFILES=window.o shadersproc.o color.o glpng.o
 
 default: testopengl
 
