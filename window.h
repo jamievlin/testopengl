@@ -28,9 +28,12 @@ private:
     GLuint shaderProg;
     GLuint vao;
 
-    std::unique_ptr<glpng::PNGArray> im;
+    std::unique_ptr<glpng::PNGArray> im, im2;
 
     float totalTime;
+
+    void loadShaders();
+    void loadTextures();
 };
 
 #endif

@@ -35,14 +35,43 @@ Window::Window() : win1(glfwCreateWindow(800, 800, "Hello OpenGL", nullptr, null
     glGenVertexArrays(1, &vao);
     glBindVertexArray(vao);
 
+    loadShaders();
+    loadTextures();
+}
+
+void Window::loadShaders()
+{
     GLuint vertShader = createShaderFile("shaders/vs.glsl", GL_VERTEX_SHADER);
     GLuint fragShader = createShaderFile("shaders/fs.glsl", GL_FRAGMENT_SHADER);
 
     shaderProg = glCreateProgram();
     glAttachShader(shaderProg, vertShader);
     glAttachShader(shaderProg, fragShader);
+    glLinkProgram(shaderProg);
+}
+
+void Window::loadTextures()
+{
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    GLuint tex[2];
+    glGenTextures(2, tex);
 
     this->im = std::make_unique<glpng::PNGArray>("res/texture.png");
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, tex[0]);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, im->width, im->height, 0, GL_RGB, GL_FLOAT, im->data.data());
+    glGenerateMipmap(GL_TEXTURE_2D);
+
+    this->im2 = std::make_unique<glpng::PNGArray>("res/texture2.png");
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_2D, tex[1]);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, im2->width, im2->height, 0, GL_RGB, GL_FLOAT, im2->data.data());
+    glGenerateMipmap(GL_TEXTURE_2D);
+
+    glActiveTexture(GL_TEXTURE0);
 }
 
 Window::~Window()
@@ -102,27 +131,26 @@ void Window::eventTick(float deltaTime)
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(GLuint) * elements.size(), elements.data(), GL_STATIC_DRAW);
 
-    GLuint tex;
-    glGenTextures(1, &tex);
-    glBindTexture(GL_TEXTURE_2D, tex);
-
-    float borderCol[] = {1.f, 0.f, 0.f, 1.f};
-    glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderCol);
-
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glGenerateMipmap(GL_TEXTURE_2D);
-
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, im->width, im->height, 0, GL_RGB, GL_FLOAT, im->data.data());
-
-
-    glLinkProgram(shaderProg);
     glUseProgram(shaderProg);
 
-    GLint uniColor = glGetUniformLocation(shaderProg, "triangleCol");
+    GLuint tbo[2];
+    tbo[0] = glGetUniformLocation(shaderProg, "texture1");
+    tbo[1] = glGetUniformLocation(shaderProg, "texture2");
 
+    // assert(glGetUniformLocation(shaderProg, "texture1") != glGetUniformLocation(shaderProg, "texture2"));
+
+    glUniform1i(tbo[0], 0);
+    glUniform1i(tbo[1], 1);
+
+    GLint uniColor = glGetUniformLocation(shaderProg, "triangleCol");
     auto rgb = color::hsv2rgb(glm::vec3(totalTime/1000, 1, 1), false);
     glUniform3f(uniColor, rgb.r, rgb.g, rgb.b);
+
+    GLint uniWeight = glGetUniformLocation(shaderProg, "mixWeight");
+    glUniform1f(uniWeight, (float)glm::sin(totalTime/1000) * 0.5 + 0.5);
+
+    GLint uniTime = glGetUniformLocation(shaderProg, "_time");
+    glUniform1f(uniTime, totalTime/1000);
 
     GLint posAttrib = glGetAttribLocation(shaderProg, "position");
     glVertexAttribPointer(posAttrib, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), 0);
