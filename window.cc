@@ -1,11 +1,12 @@
 #include <GL/glew.h>
-
 #include <GL/gl.h>
 #include <GL/glu.h>
 
 #include <GLFW/glfw3.h>
-
 #include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
+
 
 #include <vector>
 #include <string>
@@ -14,7 +15,10 @@
 #include <array>
 #include <cassert>
 
-// #include <iostream>
+#ifdef DEBUG
+#include <iostream>
+#endif
+
 #include <chrono>
 #include <cmath>
 #include <ratio>
@@ -24,10 +28,15 @@
 #include "glpng.h" 
 #include "shadersproc.h"
 #include "color.h"
+#include "callback.h"
 
-Window::Window() : win1(glfwCreateWindow(800, 800, "Hello OpenGL", nullptr, nullptr))
+int const width = 800;
+int const height = 600;
+
+Window::Window() : win1(glfwCreateWindow(width, height, "Hello OpenGL", nullptr, nullptr)), flipped(false)
 {
     glfwMakeContextCurrent(win1);
+    glfwSetWindowUserPointer(win1, this);
 
     glewExperimental = GL_TRUE;
     glewInit();
@@ -37,6 +46,19 @@ Window::Window() : win1(glfwCreateWindow(800, 800, "Hello OpenGL", nullptr, null
 
     loadShaders();
     loadTextures();
+
+    transfMat = glm::mat4(1.f);
+    transfMat = glm::rotate(transfMat, glm::radians(45.f), glm::vec3(0.f, 0.f, 1.f));
+
+    viewMat = glm::lookAt(
+        glm::vec3(1.f, 1.f, 1.f),
+        glm::vec3(0.f, 0.f, 0.f),
+        glm::vec3(0.f, 0.f, 1.f)
+    ); 
+
+    projMat = glm::perspective(glm::radians(45.f), width/(float)height, 0.1f, 100.f);
+
+    glfwSetKeyCallback(win1, callback::processKeys);
 }
 
 void Window::loadShaders()
@@ -59,16 +81,16 @@ void Window::loadTextures()
     GLuint tex[2];
     glGenTextures(2, tex);
 
-    this->im = std::make_unique<glpng::PNGArray>("res/texture.png");
+    glpng::PNGArray im("res/texture.png");
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, tex[0]);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, im->width, im->height, 0, GL_RGB, GL_FLOAT, im->data.data());
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, im.width, im.height, 0, GL_RGB, GL_FLOAT, im.data.data());
     glGenerateMipmap(GL_TEXTURE_2D);
 
-    this->im2 = std::make_unique<glpng::PNGArray>("res/texture2.png");
+    glpng::PNGArray im2("res/texture2.png");
     glActiveTexture(GL_TEXTURE1);
     glBindTexture(GL_TEXTURE_2D, tex[1]);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, im2->width, im2->height, 0, GL_RGB, GL_FLOAT, im2->data.data());
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, im2.width, im2.height, 0, GL_RGB, GL_FLOAT, im2.data.data());
     glGenerateMipmap(GL_TEXTURE_2D);
 
     glActiveTexture(GL_TEXTURE0);
@@ -95,13 +117,18 @@ void Window::mainLoop()
         auto newTime = std::chrono::high_resolution_clock::now();
         std::chrono::duration<float, std::milli> duration = newTime - lastTime;
         eventTick(duration.count());
+        drawTick(duration.count());
         lastTime = newTime;
         glfwSwapBuffers(win1);        
     }
 }
 
-
 void Window::eventTick(float deltaTime)
+{
+
+}
+
+void Window::drawTick(float deltaTime)
 {
     totalTime += deltaTime;
     // std::cout << totalTime << std::endl;
@@ -133,11 +160,9 @@ void Window::eventTick(float deltaTime)
 
     glUseProgram(shaderProg);
 
-    GLuint tbo[2];
+    GLint tbo[2];
     tbo[0] = glGetUniformLocation(shaderProg, "texture1");
     tbo[1] = glGetUniformLocation(shaderProg, "texture2");
-
-    // assert(glGetUniformLocation(shaderProg, "texture1") != glGetUniformLocation(shaderProg, "texture2"));
 
     glUniform1i(tbo[0], 0);
     glUniform1i(tbo[1], 1);
@@ -151,6 +176,28 @@ void Window::eventTick(float deltaTime)
 
     GLint uniTime = glGetUniformLocation(shaderProg, "_time");
     glUniform1f(uniTime, totalTime/1000);
+
+    transfMat = glm::rotate(transfMat, glm::radians(deltaTime/500), glm::vec3(0.f, 0.f, 1.f));
+
+    glm::mat4 flipMat(1.f);
+    flipMat = glm::scale(flipMat, glm::vec3(-1.f, 1.f, 1.f));
+
+    GLint uniTransfMat = glGetUniformLocation(shaderProg, "transfMat");
+    glUniformMatrix4fv(uniTransfMat, 1, GL_FALSE, glm::value_ptr(flipped ? flipMat *  transfMat : transfMat));
+
+    GLint uniViewMat = glGetUniformLocation(shaderProg, "viewMat");
+    glUniformMatrix4fv(uniViewMat, 1, GL_FALSE, glm::value_ptr(viewMat));
+
+    GLint uniProjMat = glGetUniformLocation(shaderProg, "projMat");
+    glUniformMatrix4fv(uniProjMat, 1, GL_FALSE, glm::value_ptr(projMat));
+
+#ifdef DEBUG
+    glm::vec4 v(1.f, 0.f, 0.f, 1.f);
+    v = transfMat * v;
+    std::cout << v.x << " " << v.y << " " << v.z << std::endl;
+#endif
+
+    
 
     GLint posAttrib = glGetAttribLocation(shaderProg, "position");
     glVertexAttribPointer(posAttrib, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), 0);
