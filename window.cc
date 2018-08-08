@@ -15,9 +15,7 @@
 #include <array>
 #include <cassert>
 
-#ifdef DEBUG
 #include <iostream>
-#endif
 
 #include <chrono>
 #include <cmath>
@@ -57,6 +55,8 @@ Window::Window() : win1(glfwCreateWindow(width, height, "Hello OpenGL", nullptr,
     ); 
 
     projMat = glm::perspective(glm::radians(45.f), width/(float)height, 0.1f, 100.f);
+
+    totalTime = 0.f;
 
     glfwSetKeyCallback(win1, callback::processKeys);
 }
@@ -116,7 +116,7 @@ void Window::mainLoop()
 
         auto newTime = std::chrono::high_resolution_clock::now();
         std::chrono::duration<float, std::milli> duration = newTime - lastTime;
-        eventTick(duration.count());
+        // eventTick(duration.count());
         drawTick(duration.count());
         lastTime = newTime;
         glfwSwapBuffers(win1);        
@@ -177,6 +177,10 @@ void Window::drawTick(float deltaTime)
     GLint uniTime = glGetUniformLocation(shaderProg, "_time");
     glUniform1f(uniTime, totalTime/1000);
 
+    GLint uniScaleFactor = glGetUniformLocation(shaderProg, "scaleFactor");
+
+    glUniform1f(uniScaleFactor, 1.f + (1.f * glm::sin(totalTime/1000)));
+
     transfMat = glm::rotate(transfMat, glm::radians(deltaTime/500), glm::vec3(0.f, 0.f, 1.f));
 
     glm::mat4 flipMat(1.f);
@@ -191,12 +195,7 @@ void Window::drawTick(float deltaTime)
     GLint uniProjMat = glGetUniformLocation(shaderProg, "projMat");
     glUniformMatrix4fv(uniProjMat, 1, GL_FALSE, glm::value_ptr(projMat));
 
-#ifdef DEBUG
-    glm::vec4 v(1.f, 0.f, 0.f, 1.f);
-    v = transfMat * v;
-    std::cout << v.x << " " << v.y << " " << v.z << std::endl;
-#endif
-
+    std::cout << deltaTime << std::endl;
     
 
     GLint posAttrib = glGetAttribLocation(shaderProg, "position");

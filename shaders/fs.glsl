@@ -3,6 +3,7 @@
 uniform vec3 triangleCol;
 uniform float mixWeight;
 uniform float _time;
+
 uniform sampler2D texture1;
 uniform sampler2D texture2;
 

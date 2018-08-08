@@ -11,10 +11,12 @@ uniform mat4 transfMat;
 uniform mat4 viewMat;
 uniform mat4 projMat;
 
+uniform float scaleFactor;
+
 
 void main()
 {
-    gl_Position = projMat * viewMat * transfMat * vec4(position.x, -position.y, 0.0, 1.0);
+    gl_Position = projMat * viewMat * transfMat * vec4(scaleFactor * position.x, scaleFactor * -position.y, 0.0, 1.0);
     Intensity = intensity;
     Texcoord = texcoord;
 }
