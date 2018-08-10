@@ -1,6 +1,6 @@
 #version 150
 
-in vec2 position;
+in vec3 position;
 in vec2 texcoord;
 in float intensity;
 
@@ -16,7 +16,7 @@ uniform float scaleFactor;
 
 void main()
 {
-    gl_Position = projMat * viewMat * transfMat * vec4(scaleFactor * position.x, scaleFactor * -position.y, 0.0, 1.0);
+    gl_Position = projMat * viewMat * vec4(position, 1.0);
     Intensity = intensity;
     Texcoord = texcoord;
 }

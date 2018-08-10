@@ -31,7 +31,8 @@
 int const width = 800;
 int const height = 600;
 
-Window::Window() : win1(glfwCreateWindow(width, height, "Hello OpenGL", nullptr, nullptr)), flipped(false)
+Window::Window() : win1(glfwCreateWindow(width, height, "Hello OpenGL", nullptr, nullptr)), flipped(false), totalTime(0.f),
+                   transfMat(1.f), projMat(glm::perspective(glm::radians(60.f), width / (float)height, 0.1f, 100.f))
 {
     glfwMakeContextCurrent(win1);
     glfwSetWindowUserPointer(win1, this);
@@ -45,19 +46,15 @@ Window::Window() : win1(glfwCreateWindow(width, height, "Hello OpenGL", nullptr,
     loadShaders();
     loadTextures();
 
-    transfMat = glm::mat4(1.f);
-    transfMat = glm::rotate(transfMat, glm::radians(45.f), glm::vec3(0.f, 0.f, 1.f));
+    transfMat = glm::rotate(transfMat, glm::radians(80.f), glm::vec3(0.f, 0.f, 1.f));
 
     viewMat = glm::lookAt(
-        glm::vec3(1.f, 1.f, 1.f),
+        glm::vec3(2.f, -2.f, 2.f),
         glm::vec3(0.f, 0.f, 0.f),
         glm::vec3(0.f, 0.f, 1.f)
     ); 
 
-    projMat = glm::perspective(glm::radians(45.f), width/(float)height, 0.1f, 100.f);
-
-    totalTime = 0.f;
-
+    glEnable(GL_DEPTH_TEST);
     glfwSetKeyCallback(win1, callback::processKeys);
 }
 
@@ -133,19 +130,41 @@ void Window::drawTick(float deltaTime)
     totalTime += deltaTime;
     // std::cout << totalTime << std::endl;
 
-    // [x, y] [v] [u, v]
+    // [x, y, z] [i] [u, v]
     std::vector<float> vertices = {
-        -0.5f, 0.5f, 1.f, 0.f, 0.f,   // vert 1
-        0.5f, 0.5f, 0.5f, 1.f, 0.f,   // vert 2
-        0.5f, -0.5f, 0.1f, 1.f, 1.f,  // vert 3
-        -0.5f, -0.5f, 0.5f, 0.f, 1.f  // vert 4
+        -0.5f, 0.5f, -0.5f, 1.f, 0.f, 0.f,  // vert 0
+        0.5f, 0.5f, -0.5f, 0.5f, 1.f, 0.f,  // vert 1
+        0.5f, -0.5f, -0.5f, 0.1f, 1.f, 1.f, // vert 2
+        -0.5f, -0.5f, -0.5f, 0.5f, 0.f, 1.f, // vert 3
+        
+        - 0.5f, 0.5f, .5f, 1.f, 0.f, 1.f,  // vert 4
+        0.5f, 0.5f, .5f, 1.f, 1.f, 1.f,  // vert 5
+        0.5f, -0.5f, .5f, 1.f, 1.f, 0.f, // vert 6
+        -0.5f, -0.5f, .5f, 1.f, 0.f, 0.f // vert 7
 
     };
 
     std::vector<GLuint> elements = {
+
+        
+        0, 3, 4,
+        4, 3, 7, 
+
+        2, 3, 7,
+        2, 7, 6, 
+
+        0, 1, 4,
+        1, 4, 5, 
+
+        1, 2, 5,
+        2, 5, 6, 
+
+        4, 5, 7,
+        5, 6, 7, 
+
         0, 1, 2, // V1-V2-V3
-        0, 2, 3 // V2-V3-V4
-    }; 
+        0, 2, 3, // V2-V3-V4
+   };
 
     GLuint vbo;
     glGenBuffers(1, &vbo);
@@ -195,22 +214,20 @@ void Window::drawTick(float deltaTime)
     GLint uniProjMat = glGetUniformLocation(shaderProg, "projMat");
     glUniformMatrix4fv(uniProjMat, 1, GL_FALSE, glm::value_ptr(projMat));
 
-    std::cout << deltaTime << std::endl;
-    
-
+    // std::cout << deltaTime << std::endl;
     GLint posAttrib = glGetAttribLocation(shaderProg, "position");
-    glVertexAttribPointer(posAttrib, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), 0);
+    glVertexAttribPointer(posAttrib, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), 0);
     glEnableVertexAttribArray(posAttrib);
 
     GLint intAttrib = glGetAttribLocation(shaderProg, "intensity");
-    glVertexAttribPointer(intAttrib, 1, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void *)(2 * sizeof(float)));
+    glVertexAttribPointer(intAttrib, 1, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void *)(3 * sizeof(float)));
     glEnableVertexAttribArray(intAttrib);
 
     GLint texAttrib = glGetAttribLocation(shaderProg, "texcoord");
     glEnableVertexAttribArray(texAttrib);
-    glVertexAttribPointer(texAttrib, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3*sizeof(float)));
+    glVertexAttribPointer(texAttrib, 2, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(4 * sizeof(float)));
 
     //glDrawArrays(GL_TRIANGLES, 0, 6);
-    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);;
+    glDrawElements(GL_TRIANGLES, elements.size(), GL_UNSIGNED_INT, (void*)(0 * sizeof(unsigned int)));;
 
 }
