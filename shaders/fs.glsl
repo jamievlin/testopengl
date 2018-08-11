@@ -3,6 +3,7 @@
 uniform vec3 triangleCol;
 uniform float mixWeight;
 uniform float _time;
+uniform float multIntensity;
 
 uniform sampler2D texture1;
 uniform sampler2D texture2;
@@ -29,5 +30,5 @@ void main()
     //     outColor = vec4(rawCol, 1.0) * tex2_refl;
     // }
 
-    outColor = mix(tex1, tex2, mixWeight) * vec4(rawCol, 1.0);
+    outColor = multIntensity * mix(tex1, tex2, mixWeight) * vec4(rawCol, 1.0);
 }

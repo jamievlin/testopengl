@@ -39,7 +39,7 @@ private:
     void eventTick(float deltaTime);
     void drawTick(float deltaTime);
 
-    glm::mat4 transfMat, viewMat, projMat;
+    glm::mat4 transfMat, viewMat, projMat, modelMat;
 
     bool flipped;
 };

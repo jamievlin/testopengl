@@ -31,8 +31,9 @@
 int const width = 800;
 int const height = 600;
 
-Window::Window() : win1(glfwCreateWindow(width, height, "Hello OpenGL", nullptr, nullptr)), flipped(false), totalTime(0.f),
-                   transfMat(1.f), projMat(glm::perspective(glm::radians(60.f), width / (float)height, 0.1f, 100.f))
+Window::Window() : win1(glfwCreateWindow(width, height, "Hello OpenGL", nullptr, nullptr)), totalTime(0.f),flipped(false), 
+                   transfMat(1.f), projMat(glm::perspective(glm::radians(60.f), width / (float)height, 0.1f, 100.f)), 
+                   modelMat(1.f)
 {
     glfwMakeContextCurrent(win1);
     glfwSetWindowUserPointer(win1, this);
@@ -109,6 +110,7 @@ void Window::mainLoop()
     while (isActive())
     {
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        
         glfwPollEvents();
 
         auto newTime = std::chrono::high_resolution_clock::now();
@@ -128,7 +130,8 @@ void Window::eventTick(float deltaTime)
 void Window::drawTick(float deltaTime)
 {
     totalTime += deltaTime;
-    // std::cout << totalTime << std::endl;
+    glClearColor(0.392, 0.584, 0.929, 1.f);
+    glUseProgram(shaderProg);
 
     // [x, y, z] [i] [u, v]
     std::vector<float> vertices = {
@@ -140,13 +143,16 @@ void Window::drawTick(float deltaTime)
         - 0.5f, 0.5f, .5f, 1.f, 0.f, 1.f,  // vert 4
         0.5f, 0.5f, .5f, 1.f, 1.f, 1.f,  // vert 5
         0.5f, -0.5f, .5f, 1.f, 1.f, 0.f, // vert 6
-        -0.5f, -0.5f, .5f, 1.f, 0.f, 0.f // vert 7
+        -0.5f, -0.5f, .5f, 1.f, 0.f, 0.f, // vert 7
 
+        //floors 
+        -1.f, -1.f, -.5f, 0.f, 0.f, 0.f,
+        1.f, 1.f, -.5f, 0.f, 0.f, 0.f,
+        1.f, -1.f, -.5f, 0.f, 0.f, 0.f,
+        -1.f, 1.f, -.5f, 0.f, 0.f, 0.f,
     };
 
     std::vector<GLuint> elements = {
-
-        
         0, 3, 4,
         4, 3, 7, 
 
@@ -164,6 +170,10 @@ void Window::drawTick(float deltaTime)
 
         0, 1, 2, // V1-V2-V3
         0, 2, 3, // V2-V3-V4
+
+        //floors
+        8, 9, 10, 
+        8, 9, 11
    };
 
     GLuint vbo;
@@ -177,7 +187,6 @@ void Window::drawTick(float deltaTime)
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(GLuint) * elements.size(), elements.data(), GL_STATIC_DRAW);
 
-    glUseProgram(shaderProg);
 
     GLint tbo[2];
     tbo[0] = glGetUniformLocation(shaderProg, "texture1");
@@ -185,6 +194,9 @@ void Window::drawTick(float deltaTime)
 
     glUniform1i(tbo[0], 0);
     glUniform1i(tbo[1], 1);
+
+    GLint uniMultInten = glGetUniformLocation(shaderProg, "multIntensity");
+    glUniform1f(uniMultInten, 1);
 
     GLint uniColor = glGetUniformLocation(shaderProg, "triangleCol");
     auto rgb = color::hsv2rgb(glm::vec3(totalTime/1000, 1, 1), false);
@@ -200,7 +212,7 @@ void Window::drawTick(float deltaTime)
 
     glUniform1f(uniScaleFactor, 1.f + (1.f * glm::sin(totalTime/1000)));
 
-    transfMat = glm::rotate(transfMat, glm::radians(deltaTime/500), glm::vec3(0.f, 0.f, 1.f));
+    transfMat = glm::rotate(transfMat, glm::radians(deltaTime/100), glm::vec3(0.f, 0.f, 1.f));
 
     glm::mat4 flipMat(1.f);
     flipMat = glm::scale(flipMat, glm::vec3(-1.f, 1.f, 1.f));
@@ -208,8 +220,13 @@ void Window::drawTick(float deltaTime)
     GLint uniTransfMat = glGetUniformLocation(shaderProg, "transfMat");
     glUniformMatrix4fv(uniTransfMat, 1, GL_FALSE, glm::value_ptr(flipped ? flipMat *  transfMat : transfMat));
 
+
+    GLint uniModelMat = glGetUniformLocation(shaderProg, "modelMat");
+    modelMat = glm::mat4(1.f);
+    glUniformMatrix4fv(uniModelMat, 1, GL_FALSE, glm::value_ptr(modelMat));
+
     GLint uniViewMat = glGetUniformLocation(shaderProg, "viewMat");
-    glUniformMatrix4fv(uniViewMat, 1, GL_FALSE, glm::value_ptr(viewMat));
+    glUniformMatrix4fv(uniViewMat, 1, GL_FALSE, glm::value_ptr(viewMat));         
 
     GLint uniProjMat = glGetUniformLocation(shaderProg, "projMat");
     glUniformMatrix4fv(uniProjMat, 1, GL_FALSE, glm::value_ptr(projMat));
@@ -228,6 +245,42 @@ void Window::drawTick(float deltaTime)
     glVertexAttribPointer(texAttrib, 2, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(4 * sizeof(float)));
 
     //glDrawArrays(GL_TRIANGLES, 0, 6);
-    glDrawElements(GL_TRIANGLES, elements.size(), GL_UNSIGNED_INT, (void*)(0 * sizeof(unsigned int)));;
+    glUniformMatrix4fv(uniModelMat, 1, GL_FALSE, glm::value_ptr(modelMat));
 
+    glDrawElements(GL_TRIANGLES, elements.size() - 6, GL_UNSIGNED_INT, (void*)(0 * sizeof(unsigned int)));
+
+    // drawing floor
+
+    glEnable(GL_STENCIL_TEST);
+    glStencilMask(0xff);
+    glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+    glStencilFunc(GL_ALWAYS, 1, 0xff);
+
+    glClear(GL_STENCIL_BUFFER_BIT);
+
+    glDepthMask(GL_FALSE);
+    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, (void*)(36 * sizeof(unsigned int)));
+    glDepthMask(GL_TRUE);
+
+    modelMat = glm::scale(glm::translate(modelMat, glm::vec3(0, 0, -.5f)), glm::vec3(1, 1, -1));
+    modelMat = glm::translate(modelMat, glm::vec3(0, 0, 0.5f));
+
+    glUniformMatrix4fv(uniModelMat, 1, GL_FALSE, glm::value_ptr(modelMat));
+    glUniform1f(uniMultInten, 0.3);
+
+    // glDisable(GL_DEPTH_TEST);
+
+    // reflection
+    glStencilFunc(GL_EQUAL, 1, 0xff);
+    glStencilMask(0x00);
+    glDrawElements(GL_TRIANGLES, elements.size() - 6, GL_UNSIGNED_INT, (void*)(0 * sizeof(unsigned int)));
+
+    glDisable(GL_STENCIL_TEST);
+    glUniform1f(uniMultInten, 1);
+
+    glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, (void*)(36 * sizeof(unsigned int)));
+    glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+
+    // glEnable(GL_DEPTH_TEST);
 }
