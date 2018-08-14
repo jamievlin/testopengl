@@ -1,4 +1,6 @@
-CXX=clang++
+ifndef CXX
+    CXX=clang++
+endif
 LIBS=-lglfw -lGL -lGLU -lGLEW -lpng
 # FLAGS=-DGLEW_STATIC
 CXXFLAGS= -std=c++14 -Wall -g
