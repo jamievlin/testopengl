@@ -5,6 +5,8 @@
 #include <string>
 #include <glm/glm.hpp>
 #include <memory>
+#include <unordered_map>
+#include <string>
 
 #include "callback.h"
 #include "glpng.h"
@@ -23,11 +25,17 @@ public:
 
 private: 
     GLFWwindow *win1;
-    GLuint shaderProg;
-    GLuint vao;
+    GLuint shaderProg, fbshaderProg;
+    GLuint vao, finalvao, fbo;
+    GLuint texFboTarget, rboDepthStencil;
+    GLuint tex1, tex2;
 
     float totalTime;
 
+    void createCubeArray(GLint _vao, GLint shaderProg);
+    GLuint createFrameBuffer(GLuint* texColBuffer, GLuint* rboDepthStencil); 
+
+    std::unordered_map<std::string, GLint> cubeUniforms;
     void loadShaders();
     void loadTextures();
 
