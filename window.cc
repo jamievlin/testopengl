@@ -31,6 +31,13 @@
 
 int const width = 800;
 int const height = 600;
+int const resfactor = 2;
+
+
+inline glm::mat4 invdual(glm::mat4 in)
+{
+    return glm::transpose(glm::inverse(in));
+}
 
 Window::Window() : win1(glfwCreateWindow(width, height, "Hello OpenGL", nullptr, nullptr)), totalTime(0.f),
                    transfMat(1.f), projMat(glm::perspective(glm::radians(60.f), width / (float)height, 0.1f, 100.f)), 
@@ -110,6 +117,7 @@ void Window::loadTextures()
 
 Window::~Window()
 {
+    glDeleteFramebuffers(1, &fbo);
     glfwDestroyWindow(win1);
 }
 
@@ -155,9 +163,15 @@ void Window::loadObj(GLint _vao, GLint shaderProg, std::string const fileLoc, st
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, elements.size() * sizeof(GLuint), elements.data(), GL_STATIC_DRAW);
 
-    uniforms.emplace("viewMat", glGetUniformLocation(shaderProg, "viewMat"));
-    uniforms.emplace("projMat", glGetUniformLocation(shaderProg, "projMat"));
-    uniforms.emplace("modelMat", glGetUniformLocation(shaderProg, "modelMat"));
+    auto reguniforms = [&](std::string const uniformName) {uniforms.emplace(uniformName, glGetUniformLocation(shaderProg, uniformName.c_str())); };
+
+    reguniforms("viewMat");
+    reguniforms("projMat");
+    reguniforms("modelMat");
+
+    reguniforms("viewMatInvDual");
+    reguniforms("projMatInvDual");
+    reguniforms("modelMatInvDual");
 
     GLint posAttrib = glGetAttribLocation(shaderProg, "position");
     glVertexAttribPointer(posAttrib, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), 0);
@@ -185,17 +199,19 @@ GLuint Window::createFrameBuffer(GLuint* texColBuffer, GLuint* rboDepthStencil)
 
     glActiveTexture(GL_TEXTURE2);
     glBindTexture(GL_TEXTURE_2D, *texColBuffer);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, resfactor * width, resfactor * height, 0, GL_RGB, GL_UNSIGNED_BYTE, nullptr);
 
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glGenerateMipmap(GL_TEXTURE_2D);
+   
 
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, *texColBuffer, 0);
 
+    glGenerateMipmap(GL_TEXTURE_2D);
+
     glGenRenderbuffers(1, rboDepthStencil);
     glBindRenderbuffer(GL_RENDERBUFFER, *rboDepthStencil);
-    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, width, height);
+    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, resfactor * width, resfactor * height);
     glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, *rboDepthStencil);
 
     // glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -211,24 +227,38 @@ void Window::drawTick(float deltaTime)
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+    glViewport(0, 0, resfactor * width, resfactor *  height);
+
     glBindVertexArray(vao);
     glLinkProgram(shaderProg);
     glUseProgram(shaderProg);
 
     glClearColor(0, 0, 0, 1);
 
+    modelMat = glm::rotate(modelMat, 0.5f * (deltaTime/1000), glm::vec3(0, 0, 1));
+
     glUniformMatrix4fv(cubeUniforms["projMat"], 1, GL_FALSE, glm::value_ptr(projMat));
     glUniformMatrix4fv(cubeUniforms["viewMat"], 1, GL_FALSE, glm::value_ptr(viewMat));   
     glUniformMatrix4fv(cubeUniforms["modelMat"], 1, GL_FALSE, glm::value_ptr(modelMat));   
+
+    glUniformMatrix4fv(cubeUniforms["projMatInvDual"], 1, GL_FALSE, glm::value_ptr(invdual(projMat)));
+    glUniformMatrix4fv(cubeUniforms["viewMatInvDual"], 1, GL_FALSE, glm::value_ptr(invdual(viewMat)));   
+    glUniformMatrix4fv(cubeUniforms["modelMatInvDual"], 1, GL_FALSE, glm::value_ptr(invdual(modelMat)));   
+
+    
 
     glEnable(GL_DEPTH_TEST);
     glDrawElements(GL_TRIANGLES, totalElements, GL_UNSIGNED_INT, nullptr);
     // end drawing 
 
+
     /* #region main draw */ 
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glBindVertexArray(finalvao);
+
+
+    glViewport(0, 0, 1 * width, 1 *  height);
 
     glUseProgram(fbshaderProg);
     // [x, y] [u, v]
@@ -250,6 +280,7 @@ void Window::drawTick(float deltaTime)
     GLint fbTextureUni = glGetUniformLocation(fbshaderProg, "texFrameBuffer");
 
     glActiveTexture(GL_TEXTURE2);
+    glGenerateMipmap(GL_TEXTURE_2D);
     glBindTexture(GL_TEXTURE_2D, texFboTarget);
     glUniform1i(fbTextureUni, 2);
 
@@ -266,3 +297,4 @@ void Window::drawTick(float deltaTime)
 
     /* #endregion */
 }
+

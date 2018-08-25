@@ -1,10 +1,10 @@
 #version 450
 
-in vec3 Normal;
+in vec4 Normal;
 
 out vec4 outColor;
 
 void main()
 {
-    outColor = vec4(Normal, 1);
+    outColor = Normal;
 }

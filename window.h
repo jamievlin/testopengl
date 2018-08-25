@@ -11,7 +11,7 @@
 #include "callback.h"
 #include "glpng.h"
 
-
+inline glm::mat4 invdual(glm::mat4 in);
 class Window
 {
 public:
