@@ -32,8 +32,11 @@ private:
 
     float totalTime;
 
-    void createCubeArray(GLint _vao, GLint shaderProg);
+    // void createCubeArray(GLint _vao, GLint shaderProg);
+    void loadObj(GLint _vao, GLint shaderProg, std::string const fileLoc, std::unordered_map<std::string, GLint>& uniforms);
     GLuint createFrameBuffer(GLuint* texColBuffer, GLuint* rboDepthStencil); 
+
+    int totalElements;
 
     std::unordered_map<std::string, GLint> cubeUniforms;
     void loadShaders();
@@ -48,8 +51,6 @@ private:
     void drawTick(float deltaTime);
 
     glm::mat4 transfMat, viewMat, projMat, modelMat;
-
-    bool flipped;
 };
 
 #endif
