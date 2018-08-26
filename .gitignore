@@ -380,4 +380,4 @@ ASALocalRun/
 slnx.sqlite
 
 extlibs/*
-mvsc/*
+msvc/*

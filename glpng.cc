@@ -1,3 +1,5 @@
+#ifndef NO_PNG
+
 #include <png++/png.hpp>
 #include "glpng.h"
 #include <vector>
@@ -31,3 +33,5 @@ namespace glpng
         }
     }
 }
+
+#endif

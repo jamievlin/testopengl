@@ -23,7 +23,11 @@
 #include <memory>
 
 #include "window.h"
+
+#ifndef NO_PNG
 #include "glpng.h" 
+#endif 
+
 #include "shadersproc.h"
 #include "color.h"
 #include "callback.h"
@@ -91,6 +95,7 @@ void Window::loadShaders()
     glLinkProgram(fbshaderProg);
 }
 
+#ifndef NO_PNG
 void Window::loadTextures()
 {
     glGenTextures(1, &tex1);
@@ -114,6 +119,7 @@ void Window::loadTextures()
 
     glActiveTexture(GL_TEXTURE0);
 }
+#endif 
 
 Window::~Window()
 {
