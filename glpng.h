@@ -1,4 +1,4 @@
-#ifndef __TOGL_GLPNG && NO_PNG
+#if !(defined(__TOGL_GLPNG) || defined(NO_PNG))
 #define __TOGL_GLPNG
 
 #include <vector>
