@@ -28,12 +28,13 @@ private:
     GLuint shaderProg, fbshaderProg;
     GLuint vao, finalvao, fbo;
     GLuint texFboTarget, rboDepthStencil;
-    GLuint tex1, tex2;
+    GLuint tex1, tex2, cubemapTex;
 
     float totalTime;
 
     // void createCubeArray(GLint _vao, GLint shaderProg);
     void loadObj(GLint _vao, GLint shaderProg, std::string const fileLoc, std::unordered_map<std::string, GLint>& uniforms);
+    GLuint loadCubemaps(std::vector<std::string> const& files); 
     GLuint createFrameBuffer(GLuint* texColBuffer, GLuint* rboDepthStencil); 
 
     int totalElements;
@@ -51,6 +52,7 @@ private:
     void drawTick(float deltaTime);
 
     glm::mat4 transfMat, viewMat, projMat, modelMat;
+    glm::vec3 cameraPos; 
 };
 
 #endif

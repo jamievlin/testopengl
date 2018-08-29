@@ -10,12 +10,12 @@ namespace callback
     {
         Window* mainWin = (Window*)glfwGetWindowUserPointer(window);
 
-        /*
-        if (key == GLFW_KEY_SPACE and action == GLFW_PRESS)
+        
+        if (key == GLFW_KEY_ESCAPE and action == GLFW_PRESS)
         {
-            mainWin->flipped = not mainWin->flipped;
+            glfwSetWindowShouldClose(window, true);
         }
 
-        */
+        
     }
 }

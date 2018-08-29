@@ -45,7 +45,7 @@ inline glm::mat4 invdual(glm::mat4 in)
 
 Window::Window() : win1(glfwCreateWindow(width, height, "Hello OpenGL", nullptr, nullptr)), totalTime(0.f),
                    transfMat(1.f), projMat(glm::perspective(glm::radians(60.f), width / (float)height, 0.1f, 100.f)), 
-                   modelMat(1.f)
+                   modelMat(1.f), cameraPos(2.f, -2.f, 2.f)
 {
     glfwMakeContextCurrent(win1);
     glfwSetWindowUserPointer(win1, this);
@@ -59,15 +59,23 @@ Window::Window() : win1(glfwCreateWindow(width, height, "Hello OpenGL", nullptr,
     loadShaders();
     // loadTextures();
 
+    cubemapTex = loadCubemaps({
+        "res/cubemap/out-ft.png",
+        "res/cubemap/out-bk.png",
+        "res/cubemap/out-up.png",
+        "res/cubemap/out-dn.png",
+        "res/cubemap/out-rt.png",
+        "res/cubemap/out-lf.png"
+    }); 
     loadObj(vao, shaderProg, "res/test_torus.obj", cubeUniforms);
     // createCubeArray(vao, shaderProg);
 
     transfMat = glm::rotate(transfMat, glm::radians(80.f), glm::vec3(0.f, 0.f, 1.f));
 
     viewMat = glm::lookAt(
-        glm::vec3(2.f, -2.f, 2.f),
+        cameraPos, 
         glm::vec3(0.f, 0.f, 0.f),
-        glm::vec3(0.f, 0.f, 1.f)
+        glm::vec3(0.f, 1.f, 0.f)
     ); 
 
     fbo = createFrameBuffer(&texFboTarget, &rboDepthStencil);
@@ -118,6 +126,32 @@ void Window::loadTextures()
     glGenerateMipmap(GL_TEXTURE_2D);
 
     glActiveTexture(GL_TEXTURE0);
+}
+
+GLuint Window::loadCubemaps(std::vector<std::string> const& files)
+{
+    GLuint tex; 
+    glGenTextures(1, &tex);
+
+    int offset = 0;
+    glBindTexture(GL_TEXTURE_CUBE_MAP, tex);
+
+    for (auto const& file : files)
+    {
+        glpng::PNGArray im(file);
+        glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + offset, 0, GL_RGB, im.width, im.height, 0, GL_RGB,
+                    GL_FLOAT, im.data.data()); 
+        offset++;
+    }
+
+
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE); 
+
+    return tex;
 }
 #endif 
 
@@ -178,6 +212,9 @@ void Window::loadObj(GLint _vao, GLint shaderProg, std::string const fileLoc, st
     reguniforms("viewMatInvDual");
     reguniforms("projMatInvDual");
     reguniforms("modelMatInvDual");
+
+    reguniforms("cameraPos"); 
+    reguniforms("cubeMap");
 
     GLint posAttrib = glGetAttribLocation(shaderProg, "position");
     glVertexAttribPointer(posAttrib, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), 0);
@@ -241,7 +278,7 @@ void Window::drawTick(float deltaTime)
 
     glClearColor(0, 0, 0, 1);
 
-    modelMat = glm::rotate(modelMat, 0.5f * (deltaTime/1000), glm::vec3(0, 0, 1));
+    modelMat = glm::rotate(modelMat, 0.5f * (deltaTime/1000), glm::vec3(1, 0, 0));
 
     glUniformMatrix4fv(cubeUniforms["projMat"], 1, GL_FALSE, glm::value_ptr(projMat));
     glUniformMatrix4fv(cubeUniforms["viewMat"], 1, GL_FALSE, glm::value_ptr(viewMat));   
@@ -251,6 +288,11 @@ void Window::drawTick(float deltaTime)
     glUniformMatrix4fv(cubeUniforms["viewMatInvDual"], 1, GL_FALSE, glm::value_ptr(invdual(viewMat)));   
     glUniformMatrix4fv(cubeUniforms["modelMatInvDual"], 1, GL_FALSE, glm::value_ptr(invdual(modelMat)));   
 
+    glUniform3fv(cubeUniforms["cameraPos"], 1, glm::value_ptr(cameraPos));
+
+    glActiveTexture(GL_TEXTURE4);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, cubemapTex);
+    glUniform1i(cubeUniforms["cubeMap"], 4);
     
 
     glEnable(GL_DEPTH_TEST);
