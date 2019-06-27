@@ -9,5 +9,4 @@ The default compiler is clang++, but feel free to switch to g++ by running `expo
 
 ## Notice
 
-Contents of this repo is a derivative work and hence subject to the same license as that on <http://open.gl>, namely
-the CC-BY-SA 4.0 License. 
+From June 27, 2019 onwards, this work is licensed under MIT. The contents of this sample is built from tutorial based on <open.gl> but contains no directly copied code or works derived directly from contents of the article.
